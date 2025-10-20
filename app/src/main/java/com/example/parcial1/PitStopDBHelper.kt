@@ -4,7 +4,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
-import com.example.pitstop.PitStop
+
 
 class PitStopDBHelper(context: Context) : SQLiteOpenHelper(context, "pitstopDB", null, 1) {
     override fun onCreate(db: SQLiteDatabase) {
