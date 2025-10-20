@@ -7,6 +7,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,7 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
+import com.example.pitstop.PitStopDBHelper
 data class PitStop(
     val id: Int = 0,
     val driverName: String,
@@ -73,8 +75,90 @@ fun PitStopApp(context: android.content.Context) {
             when (currentView) {
                 "summary" -> PitStopSummaryView(db) { currentView = it }
                 "edit" -> PitStopCreateView(db, onBack = { currentView = "summary" })
-                "list" -> Text("Vista Listado (pendiente)", color = Color.White)
+                "list" -> PitStopListView(
+                    db,
+                    onBack = { currentView = "summary" },
+                    onEdit = { pit ->
+                        pitToEdit = pit
+                        currentView = "editExisting"
+                    }
+                )
                 "editExisting" -> pitToEdit?.let { pit -> Text("Vista Editar (pendiente)", color = Color.White) }
+            }
+        }
+    }
+}
+
+@Composable
+fun PitStopListView(
+    db: PitStopDBHelper,
+    onBack: () -> Unit,
+    onEdit: (PitStop) -> Unit
+) {
+    var search by remember { mutableStateOf("") }
+    var pitStops by remember { mutableStateOf(db.getAllPitStops()) }
+    Spacer(Modifier.height(12.dp))
+    Button(onClick = { onBack() }, modifier = Modifier.fillMaxWidth()) {
+        Text("⬅️ Volver al resumen")
+    }
+    Column(Modifier.fillMaxSize().padding(16.dp)) {
+        Text("📋 Lista de Pit Stops", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = search,
+            onValueChange = {
+                search = it
+                pitStops = if (search.isEmpty()) db.getAllPitStops() else db.searchPitStops(search)
+            },
+            label = { Text("Buscar por piloto") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        LazyColumn {
+            items(pitStops) { pit ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(4.dp),
+                    elevation = CardDefaults.cardElevation(6.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF2E2E2E))
+                ) {
+                    Column(Modifier.padding(10.dp)) {
+                        Text("Piloto: ${pit.driverName}", color = Color.White)
+                        Text("Escudería: ${pit.team}", color = Color.LightGray)
+                        Text("Tiempo: ${pit.stopTime}s", color = Color(0xFFBB86FC))
+                        Text("Neumáticos: ${pit.tireType} (${pit.tireCount})", color = Color.LightGray)
+                        Text("Estado: ${pit.status}", color = if (pit.status == "Ok") Color.Green else Color.Red)
+                        Text("Mecánico: ${pit.mechanic}", color = Color.White)
+                        Text("Fecha/Hora: ${pit.dateTime}", color = Color(0xFFBB86FC))
+                        if (pit.failureReason.isNotEmpty()) Text("Fallo: ${pit.failureReason}", color = Color.Red)
+
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Button(
+                                onClick = { onEdit(pit) },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1976D2))
+                            ) {
+                                Text("Editar")
+                            }
+
+                            Button(
+                                onClick = {
+                                    db.deletePitStop(pit.id)
+                                    pitStops = db.getAllPitStops()
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
+                            ) {
+                                Text("Eliminar")
+                            }
+                        }
+                    }
+                }
             }
         }
     }

@@ -1,9 +1,10 @@
-package com.example.parcial1
+package com.example.pitstop
 
 import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import com.example.parcial1.PitStop
 
 class PitStopDBHelper(context: Context) : SQLiteOpenHelper(context, "pitstopDB", null, 1) {
     override fun onCreate(db: SQLiteDatabase) {
@@ -49,6 +50,42 @@ class PitStopDBHelper(context: Context) : SQLiteOpenHelper(context, "pitstopDB",
         val list = mutableListOf<PitStop>()
         val db = readableDatabase
         val cursor = db.rawQuery("SELECT * FROM pitstop ORDER BY id DESC", null)
+        if (cursor.moveToFirst()) {
+            do {
+                list.add(
+                    PitStop(
+                        id = cursor.getInt(0),
+                        driverName = cursor.getString(1),
+                        team = cursor.getString(2),
+                        stopTime = cursor.getDouble(3),
+                        tireType = cursor.getString(4),
+                        tireCount = cursor.getInt(5),
+                        status = cursor.getString(6),
+                        failureReason = cursor.getString(7),
+                        mechanic = cursor.getString(8),
+                        dateTime = cursor.getString(9)
+                    )
+                )
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        db.close()
+        return list
+    }
+
+    fun deletePitStop(id: Int) {
+        val db = writableDatabase
+        db.delete("pitstop", "id = ?", arrayOf(id.toString()))
+        db.close()
+    }
+
+    fun searchPitStops(query: String): List<PitStop> {
+        val list = mutableListOf<PitStop>()
+        val db = readableDatabase
+        val cursor = db.rawQuery(
+            "SELECT * FROM pitstop WHERE driverName LIKE ? OR team LIKE ?",
+            arrayOf("%$query%", "%$query%")
+        )
         if (cursor.moveToFirst()) {
             do {
                 list.add(
