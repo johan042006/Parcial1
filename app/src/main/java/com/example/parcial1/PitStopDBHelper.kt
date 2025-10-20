@@ -6,7 +6,10 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
 class PitStopDBHelper(context: Context) : SQLiteOpenHelper(context, "pitstopDB", null, 1) {
+    // Constructor: nombre de DB "pitstopDB", versión 1
+
     override fun onCreate(db: SQLiteDatabase) {
+        // Se ejecuta la primera vez que se crea la DB
         db.execSQL(
             """CREATE TABLE pitstop (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -21,15 +24,20 @@ class PitStopDBHelper(context: Context) : SQLiteOpenHelper(context, "pitstopDB",
                 dateTime TEXT
             )"""
         )
+        // Crea la tabla pitstop con sus columnas
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        // En caso de subir versión se puede migrar la DB; aquí simplificamos borrando y creando
         db.execSQL("DROP TABLE IF EXISTS pitstop")
         onCreate(db)
     }
 
     fun insertPitStop(p: PitStop) {
+        // Inserta un PitStop en la tabla
         val db = writableDatabase
+        // Abre DB en modo escritura
+
         val values = ContentValues().apply {
             put("driverName", p.driverName)
             put("team", p.team)
@@ -41,11 +49,17 @@ class PitStopDBHelper(context: Context) : SQLiteOpenHelper(context, "pitstopDB",
             put("mechanic", p.mechanic)
             put("dateTime", p.dateTime)
         }
+        // Mapea columnas a valores desde el objeto PitStop
+
         db.insert("pitstop", null, values)
+        // Inserta la fila en la tabla pitstop
+
         db.close()
+        // Cierra la conexión para liberar recursos
     }
 
     fun getAllPitStops(): List<PitStop> {
+        // Lee todos los registros y los devuelve en una lista
         val list = mutableListOf<PitStop>()
         val db = readableDatabase
         val cursor = db.rawQuery("SELECT * FROM pitstop ORDER BY id DESC", null)
@@ -65,20 +79,23 @@ class PitStopDBHelper(context: Context) : SQLiteOpenHelper(context, "pitstopDB",
                         dateTime = cursor.getString(9)
                     )
                 )
+                // Convierte cada fila del cursor en un objeto PitStop y lo agrega a la lista
             } while (cursor.moveToNext())
         }
-        cursor.close()
-        db.close()
-        return list
+        cursor.close() // Cierra cursor
+        db.close() // Cierra la DB
+        return list // Retorna la lista con los registros
     }
 
     fun deletePitStop(id: Int) {
+        // Elimina un registro por su id
         val db = writableDatabase
         db.delete("pitstop", "id = ?", arrayOf(id.toString()))
         db.close()
     }
 
     fun searchPitStops(query: String): List<PitStop> {
+        // Busca registros por driverName o team que contengan la cadena query
         val list = mutableListOf<PitStop>()
         val db = readableDatabase
         val cursor = db.rawQuery(
@@ -109,6 +126,7 @@ class PitStopDBHelper(context: Context) : SQLiteOpenHelper(context, "pitstopDB",
     }
 
     fun getAverageTime(): Double {
+        // Calcula el promedio de stopTime usando SQL AVG
         val db = readableDatabase
         val cursor = db.rawQuery("SELECT AVG(stopTime) FROM pitstop", null)
         val avg = if (cursor.moveToFirst()) cursor.getDouble(0) else 0.0
@@ -118,6 +136,7 @@ class PitStopDBHelper(context: Context) : SQLiteOpenHelper(context, "pitstopDB",
     }
 
     fun updatePitStop(p: PitStop) {
+        // Actualiza un registro existente por id
         val db = writableDatabase
         val values = ContentValues().apply {
             put("driverName", p.driverName)
