@@ -1,4 +1,4 @@
-package com.example.pitstop
+package com.example.parcial1
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity

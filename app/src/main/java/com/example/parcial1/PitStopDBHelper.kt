@@ -1,5 +1,6 @@
-package com.example.pitstop
+package com.example.parcial1
 
+import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
@@ -25,5 +26,49 @@ class PitStopDBHelper(context: Context) : SQLiteOpenHelper(context, "pitstopDB",
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         db.execSQL("DROP TABLE IF EXISTS pitstop")
         onCreate(db)
+    }
+
+    fun insertPitStop(p: PitStop) {
+        val db = writableDatabase
+        val values = ContentValues().apply {
+            put("driverName", p.driverName)
+            put("team", p.team)
+            put("stopTime", p.stopTime)
+            put("tireType", p.tireType)
+            put("tireCount", p.tireCount)
+            put("status", p.status)
+            put("failureReason", p.failureReason)
+            put("mechanic", p.mechanic)
+            put("dateTime", p.dateTime)
+        }
+        db.insert("pitstop", null, values)
+        db.close()
+    }
+
+    fun getAllPitStops(): List<PitStop> {
+        val list = mutableListOf<PitStop>()
+        val db = readableDatabase
+        val cursor = db.rawQuery("SELECT * FROM pitstop ORDER BY id DESC", null)
+        if (cursor.moveToFirst()) {
+            do {
+                list.add(
+                    PitStop(
+                        id = cursor.getInt(0),
+                        driverName = cursor.getString(1),
+                        team = cursor.getString(2),
+                        stopTime = cursor.getDouble(3),
+                        tireType = cursor.getString(4),
+                        tireCount = cursor.getInt(5),
+                        status = cursor.getString(6),
+                        failureReason = cursor.getString(7),
+                        mechanic = cursor.getString(8),
+                        dateTime = cursor.getString(9)
+                    )
+                )
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        db.close()
+        return list
     }
 }
