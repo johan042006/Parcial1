@@ -20,7 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.pitstop.PitStopDBHelper
+
 data class PitStop(
     val id: Int = 0,
     val driverName: String,
@@ -83,7 +83,12 @@ fun PitStopApp(context: android.content.Context) {
                         currentView = "editExisting"
                     }
                 )
-                "editExisting" -> pitToEdit?.let { pit -> Text("Vista Editar (pendiente)", color = Color.White) }
+                "editExisting" -> pitToEdit?.let { pit ->
+                    PitStopEditView(pit, db) {
+                        pitToEdit = null
+                        currentView = "list"
+                    }
+                }
             }
         }
     }
@@ -99,7 +104,7 @@ fun PitStopListView(
     var pitStops by remember { mutableStateOf(db.getAllPitStops()) }
     Spacer(Modifier.height(12.dp))
     Button(onClick = { onBack() }, modifier = Modifier.fillMaxWidth()) {
-        Text("⬅️ Volver al resumen")
+        Text("⬅ Volver al resumen")
     }
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Text("📋 Lista de Pit Stops", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
@@ -159,6 +164,123 @@ fun PitStopListView(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun PitStopEditView(pit: PitStop, db: PitStopDBHelper, onBack: () -> Unit) {
+    var driver by remember { mutableStateOf(pit.driverName) }
+    var team by remember { mutableStateOf(pit.team) }
+    var time by remember { mutableStateOf(pit.stopTime.toString()) }
+    var tireType by remember { mutableStateOf(pit.tireType) }
+    var tireCount by remember { mutableStateOf(pit.tireCount.toString()) }
+    var status by remember { mutableStateOf(pit.status) }
+    var failureReason by remember { mutableStateOf(pit.failureReason) }
+    var mechanic by remember { mutableStateOf(pit.mechanic) }
+    var dateTime by remember { mutableStateOf(pit.dateTime) }
+
+    val tireOptions = listOf("Soft", "Medium", "Hard")
+    val statusOptions = listOf("Ok", "Fallo")
+    var tireMenuExpanded by remember { mutableStateOf(false) }
+    var statusMenuExpanded by remember { mutableStateOf(false) }
+
+    Column(
+        Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Text("✏ Editar Pit Stop", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedTextField(value = driver, onValueChange = { driver = it }, label = { Text("Piloto") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = team, onValueChange = { team = it }, label = { Text("Escudería") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = time, onValueChange = { time = it }, label = { Text("Tiempo total (s)") }, modifier = Modifier.fillMaxWidth())
+
+        Box(Modifier.fillMaxWidth().padding(top = 8.dp)) {
+            OutlinedTextField(
+                value = tireType,
+                onValueChange = {},
+                label = { Text("Cambio de neumáticos") },
+                modifier = Modifier.fillMaxWidth(),
+                readOnly = true
+            )
+            DropdownMenu(expanded = tireMenuExpanded, onDismissRequest = { tireMenuExpanded = false }) {
+                tireOptions.forEach { option ->
+                    DropdownMenuItem(text = { Text(option) }, onClick = {
+                        tireType = option
+                        tireMenuExpanded = false
+                    })
+                }
+            }
+            Spacer(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(Color.Transparent)
+                    .clickable { tireMenuExpanded = true }
+            )
+        }
+
+        OutlinedTextField(value = tireCount, onValueChange = { tireCount = it }, label = { Text("Número de neumáticos") }, modifier = Modifier.fillMaxWidth())
+
+        Box(Modifier.fillMaxWidth().padding(top = 8.dp)) {
+            OutlinedTextField(
+                value = status,
+                onValueChange = {},
+                label = { Text("Estado") },
+                modifier = Modifier.fillMaxWidth(),
+                readOnly = true
+            )
+            DropdownMenu(expanded = statusMenuExpanded, onDismissRequest = { statusMenuExpanded = false }) {
+                statusOptions.forEach { option ->
+                    DropdownMenuItem(text = { Text(option) }, onClick = {
+                        status = option
+                        statusMenuExpanded = false
+                    })
+                }
+            }
+            Spacer(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(Color.Transparent)
+                    .clickable { statusMenuExpanded = true }
+            )
+        }
+
+        OutlinedTextField(value = failureReason, onValueChange = { failureReason = it }, label = { Text("Motivo del fallo") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = mechanic, onValueChange = { mechanic = it }, label = { Text("Mecánico principal") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = dateTime, onValueChange = { dateTime = it }, label = { Text("Fecha y hora del Pit Stop") }, modifier = Modifier.fillMaxWidth())
+
+        Spacer(Modifier.height(16.dp))
+
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+            Button(
+                onClick = {
+                    val updatedPit = pit.copy(
+                        driverName = driver,
+                        team = team,
+                        stopTime = time.toDoubleOrNull() ?: 0.0,
+                        tireType = tireType,
+                        tireCount = tireCount.toIntOrNull() ?: 0,
+                        status = status,
+                        failureReason = failureReason,
+                        mechanic = mechanic,
+                        dateTime = dateTime
+                    )
+                    db.updatePitStop(updatedPit)
+                    onBack()
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF388E3C))
+            ) {
+                Text("Actualizar")
+            }
+
+            Button(
+                onClick = { onBack() },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
+            ) {
+                Text("Cancelar")
             }
         }
     }
@@ -261,7 +383,6 @@ fun PitStopCreateView(db: PitStopDBHelper, onBack: () -> Unit) {
         OutlinedTextField(value = team, onValueChange = { team = it }, label = { Text("Escudería") }, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(value = time, onValueChange = { time = it }, label = { Text("Tiempo total (s)") }, modifier = Modifier.fillMaxWidth())
 
-        // Menú neumáticos
         Box(Modifier.fillMaxWidth().padding(top = 8.dp)) {
             OutlinedTextField(
                 value = tireType,
@@ -288,7 +409,6 @@ fun PitStopCreateView(db: PitStopDBHelper, onBack: () -> Unit) {
 
         OutlinedTextField(value = tireCount, onValueChange = { tireCount = it }, label = { Text("Número de neumáticos") }, modifier = Modifier.fillMaxWidth())
 
-        // Menú estado
         Box(Modifier.fillMaxWidth().padding(top = 8.dp)) {
             OutlinedTextField(
                 value = status,

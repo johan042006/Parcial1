@@ -1,10 +1,9 @@
-package com.example.pitstop
+package com.example.parcial1
 
 import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
-import com.example.parcial1.PitStop
 
 class PitStopDBHelper(context: Context) : SQLiteOpenHelper(context, "pitstopDB", null, 1) {
     override fun onCreate(db: SQLiteDatabase) {
@@ -116,5 +115,22 @@ class PitStopDBHelper(context: Context) : SQLiteOpenHelper(context, "pitstopDB",
         cursor.close()
         db.close()
         return avg
+    }
+
+    fun updatePitStop(p: PitStop) {
+        val db = writableDatabase
+        val values = ContentValues().apply {
+            put("driverName", p.driverName)
+            put("team", p.team)
+            put("stopTime", p.stopTime)
+            put("tireType", p.tireType)
+            put("tireCount", p.tireCount)
+            put("status", p.status)
+            put("failureReason", p.failureReason)
+            put("mechanic", p.mechanic)
+            put("dateTime", p.dateTime)
+        }
+        db.update("pitstop", values, "id = ?", arrayOf(p.id.toString()))
+        db.close()
     }
 }
