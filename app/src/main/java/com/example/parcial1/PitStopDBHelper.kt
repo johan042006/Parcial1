@@ -5,7 +5,6 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
-
 class PitStopDBHelper(context: Context) : SQLiteOpenHelper(context, "pitstopDB", null, 1) {
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
@@ -71,5 +70,14 @@ class PitStopDBHelper(context: Context) : SQLiteOpenHelper(context, "pitstopDB",
         cursor.close()
         db.close()
         return list
+    }
+
+    fun getAverageTime(): Double {
+        val db = readableDatabase
+        val cursor = db.rawQuery("SELECT AVG(stopTime) FROM pitstop", null)
+        val avg = if (cursor.moveToFirst()) cursor.getDouble(0) else 0.0
+        cursor.close()
+        db.close()
+        return avg
     }
 }

@@ -3,6 +3,7 @@ package com.example.parcial1
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -10,6 +11,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -67,10 +71,78 @@ fun PitStopApp(context: android.content.Context) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             when (currentView) {
-                "summary" -> Text("Vista Resumen (pendiente)", color = Color.White)
+                "summary" -> PitStopSummaryView(db) { currentView = it }
                 "edit" -> PitStopCreateView(db, onBack = { currentView = "summary" })
                 "list" -> Text("Vista Listado (pendiente)", color = Color.White)
                 "editExisting" -> pitToEdit?.let { pit -> Text("Vista Editar (pendiente)", color = Color.White) }
+            }
+        }
+    }
+}
+
+@Composable
+fun PitStopSummaryView(db: PitStopDBHelper, navigate: (String) -> Unit) {
+    val pitStops = db.getAllPitStops()
+    val avgTime = db.getAverageTime()
+
+    Column(
+        Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Text("📊 Resumen de Pit Stops", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        Spacer(Modifier.height(16.dp))
+        Text("Total de pilotos: ${pitStops.size}", color = Color.LightGray)
+        Text("Promedio de Tiempo: ${"%.2f".format(avgTime)}s", color = Color(0xFFBB86FC))
+
+        if (pitStops.isNotEmpty()) {
+            val fastest = pitStops.minByOrNull { it.stopTime }
+            Spacer(Modifier.height(8.dp))
+            Text("Pit stop más rápido: ${fastest?.driverName} (${fastest?.stopTime}s)", color = Color.Green)
+            Spacer(Modifier.height(24.dp))
+            Text("Tiempos por piloto:", color = Color.White, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(8.dp))
+            PitStopBarChart(pitStops)
+        } else {
+            Spacer(Modifier.height(16.dp))
+            Text("No hay registros aún.", color = Color.Gray)
+        }
+
+        Spacer(Modifier.height(32.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Button(onClick = { navigate("edit") }) { Text("➕ Registrar piloto") }
+            Button(onClick = { navigate("list") }) { Text("📋 Ver listado") }
+        }
+    }
+}
+
+@Composable
+fun PitStopBarChart(pitStops: List<PitStop>) {
+    val maxTime = pitStops.maxOfOrNull { it.stopTime } ?: 1.0
+    val barHeight = 24.dp
+
+    Column {
+        pitStops.forEach { pit ->
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
+                Text(pit.driverName, color = Color.White, modifier = Modifier.width(90.dp))
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(barHeight)
+                        .padding(start = 8.dp, end = 24.dp)
+                ) {
+                    val widthFactor = (pit.stopTime / maxTime).toFloat()
+                    drawRoundRect(
+                        color = Color(0xFFBB86FC),
+                        topLeft = Offset(0f, 0f),
+                        size = Size(size.width * widthFactor, size.height),
+                        cornerRadius = CornerRadius(10f, 10f)
+                    )
+                }
+                Text("${pit.stopTime}s", color = Color.LightGray, fontSize = 12.sp)
             }
         }
     }
@@ -105,6 +177,7 @@ fun PitStopCreateView(db: PitStopDBHelper, onBack: () -> Unit) {
         OutlinedTextField(value = team, onValueChange = { team = it }, label = { Text("Escudería") }, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(value = time, onValueChange = { time = it }, label = { Text("Tiempo total (s)") }, modifier = Modifier.fillMaxWidth())
 
+        // Menú neumáticos
         Box(Modifier.fillMaxWidth().padding(top = 8.dp)) {
             OutlinedTextField(
                 value = tireType,
@@ -131,6 +204,7 @@ fun PitStopCreateView(db: PitStopDBHelper, onBack: () -> Unit) {
 
         OutlinedTextField(value = tireCount, onValueChange = { tireCount = it }, label = { Text("Número de neumáticos") }, modifier = Modifier.fillMaxWidth())
 
+        // Menú estado
         Box(Modifier.fillMaxWidth().padding(top = 8.dp)) {
             OutlinedTextField(
                 value = status,
