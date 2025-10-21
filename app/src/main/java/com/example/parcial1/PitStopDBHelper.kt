@@ -6,7 +6,7 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
 class PitStopDBHelper(context: Context) : SQLiteOpenHelper(context, "pitstopDB", null, 1) {
-    // Constructor: nombre de DB "pitstopDB", versión 1
+    // Constructor: nombre de DB "pitstopDB"
 
     override fun onCreate(db: SQLiteDatabase) {
         // Se ejecuta la primera vez que se crea la DB
